@@ -1,7 +1,7 @@
 # Proyecto-parcial-IA
 
-## Nombre
+## Nombre: Maylon Javier Polanco 
 
-## Matrícula
+## Matrícula: 15-EISN-2-004
 
-## Proyecto
+## Proyecto: Pytroid
