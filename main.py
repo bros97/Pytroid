@@ -29,11 +29,21 @@ class Player(pygame.sprite.Sprite):
             self.rect.x -= self.speed
         if keys[pygame.K_RIGHT]:
             self.rect.x += self.speed
+        def update(self):
+            keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]:
+            self.image.fill((255, 128, 0))  # Color naranja para movimiento
+        else:
+            self.image.fill((255, 0, 0))  # Rojo si está quieto
 
         # Gravedad y salto
         self.velocity_y += self.gravity
         self.rect.y += self.velocity_y
-
+        # Agrega esto en el método update() del jugador, después de aplicar la gravedad:
+        for platform in platforms:
+            if self.rect.colliderect(platform.rect) and self.velocity_y > 0:
+                self.rect.bottom = platform.rect.top
+                self.velocity_y = 0
         # Limitar al suelo
         if self.rect.bottom > 500:
             self.rect.bottom = 500
@@ -60,6 +70,7 @@ player = Player()
 all_sprites.add(player)
 platforms.add(Platform(0, 550, 800, 50))  # Suelo
 platforms.add(Platform(300, 450, 200, 20))  # Plataforma
+
 
 # Reloj
 clock = pygame.time.Clock()
