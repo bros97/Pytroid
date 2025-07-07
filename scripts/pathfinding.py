@@ -1,7 +1,6 @@
 # scripts/pathfinding.py
 # Algoritmo A* implementado desde cero
 
-
 import heapq
 
 def a_star(start, goal, grid):
@@ -45,13 +44,13 @@ def heuristic(a, b):
 
 def get_neighbors(pos, grid):
     neighbors = []
-    x, y = pos
-    directions = [(-1,0), (1,0), (0,-1), (0,1)]  # izquierda, derecha, arriba, abajo
+    row, col = pos
+    directions = [(-1,0), (1,0), (0,-1), (0,1)]  # arriba, abajo, izquierda, derecha
 
-    for dx, dy in directions:
-        nx, ny = x + dx, y + dy
-        if 0 <= ny < len(grid) and 0 <= nx < len(grid[0]):
-            if grid[ny][nx] == 0:  # solo se puede caminar en celdas vacías
-                neighbors.append((nx, ny))
+    for dr, dc in directions:
+        r, c = row + dr, col + dc
+        if 0 <= r < len(grid) and 0 <= c < len(grid[0]):
+            if grid[r][c] == 0:  # solo en espacios caminables
+                neighbors.append((r, c))
 
     return neighbors
