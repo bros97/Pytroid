@@ -1,27 +1,23 @@
-# scripts/enemy_bullet.py
 
 import pygame
 
 class EnemyBullet:
-    def __init__(self, x, y, direction, speed=5):
-        self.rect = pygame.Rect(x, y, 10, 4)
-        self.direction = direction
-        self.speed = speed
-        self.color = (255, 0, 0)
+    def __init__(self, x, y):
+        self.radius = 5
+        self.color = (255, 0, 0)  # rojo
+        self.speed = 6
+        self.rect = pygame.Rect(x, y, self.radius * 2, self.radius * 2)
+        self.rect.center = (x, y)
 
     def update(self, walls):
-        if self.direction == "left":
-            self.rect.x -= self.speed
-        elif self.direction == "right":
-            self.rect.x += self.speed
+        self.rect.x -= self.speed  # se mueve a la izquierda
 
-        # Colisión con paredes o fuera de pantalla
+        # Destruir si choca con una pared
         for wall in walls:
             if self.rect.colliderect(wall):
                 return False
-        if self.rect.right < 0 or self.rect.left > 1200:
-            return False
+
         return True
 
     def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
+        pygame.draw.circle(surface, self.color, self.rect.center, self.radius)
