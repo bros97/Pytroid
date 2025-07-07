@@ -1,7 +1,5 @@
 # scripts/enemy_smart.py
 # Enemigo inteligente con A* básico
-
-
 import pygame
 from scripts.pathfinding import a_star
 from scripts.level import level_map, TILE_SIZE
@@ -10,48 +8,90 @@ class EnemySmart:
     def __init__(self, x, y):
         self.width = 30
         self.height = 40
-        self.color = (255, 100, 0)  # naranja
+        self.color = (0, 255, 100)
         self.rect = pygame.Rect(x, y, self.width, self.height)
-        self.alive = True
         self.speed = 2
         self.path = []
         self.path_index = 0
-        self.recalc_timer = 0
+        self.gravity = 0.8
+        self.velocity_y = 0
+        self.on_ground = False
+        self.jump_power = -10
+        self.alive = True
+        self.respawn_timer = 0
+        self.spawn_point = (x, y)
 
-    def get_tile_pos(self, rect):
-        return (rect.centerx // TILE_SIZE, rect.centery // TILE_SIZE)
+    def get_grid_pos(self):
+        col = self.rect.centerx // TILE_SIZE
+        row = self.rect.centery // TILE_SIZE
+        return (row, col)
+
+    def apply_gravity(self, walls):
+        self.velocity_y += self.gravity
+        if self.velocity_y > 10:
+            self.velocity_y = 10
+
+        self.rect.y += self.velocity_y
+        self.on_ground = False
+
+        for wall in walls:
+            if self.rect.colliderect(wall):
+                if self.velocity_y > 0:
+                    self.rect.bottom = wall.top
+                    self.velocity_y = 0
+                    self.on_ground = True
+                elif self.velocity_y < 0:
+                    self.rect.top = wall.bottom
+                    self.velocity_y = 0
+
+    def follow_path(self, walls):
+        if self.path and self.path_index < len(self.path):
+            target_row, target_col = self.path[self.path_index]
+            target_x = target_col * TILE_SIZE + TILE_SIZE // 2
+            target_y = target_row * TILE_SIZE + TILE_SIZE // 2
+
+            dx = target_x - self.rect.centerx
+            dy = target_y - self.rect.centery
+
+            if abs(dx) > 5:
+                self.rect.x += self.speed if dx > 0 else -self.speed
+            if dy < -10 and self.on_ground:
+                self.velocity_y = self.jump_power
+                self.on_ground = False
+
+            # avanzar al siguiente nodo si ya se alcanzó el actual
+            if abs(dx) < 5 and abs(dy) < 10:
+                self.path_index += 1
+
+            for wall in walls:
+                if self.rect.colliderect(wall):
+                    if dx > 0:
+                        self.rect.right = wall.left
+                    elif dx < 0:
+                        self.rect.left = wall.right
 
     def update(self, player, walls):
         if not self.alive:
+            self.respawn_timer += 1
+            if self.respawn_timer > 180:  # 3 segundos
+                self.rect.topleft = self.spawn_point
+                self.alive = True
+                self.respawn_timer = 0
             return
 
-        # Calcular camino cada 60 frames
-        self.recalc_timer -= 1
-        if self.recalc_timer <= 0:
-            start = self.get_tile_pos(self.rect)
-            goal = self.get_tile_pos(player.rect)
-            self.path = a_star(start, goal, level_map)
+        self.apply_gravity(walls)
+
+        start = self.get_grid_pos()
+        end = (player.rect.centery // TILE_SIZE, player.rect.centerx // TILE_SIZE)
+
+        if not self.path or self.path_index >= len(self.path):
+            self.path = a_star(level_map, start, end)
             self.path_index = 0
-            self.recalc_timer = 60
 
-        # Mover al siguiente tile en el camino
-        if self.path and self.path_index < len(self.path):
-            target_tile = self.path[self.path_index]
-            target_pos = (target_tile[0] * TILE_SIZE + TILE_SIZE // 2,
-                          target_tile[1] * TILE_SIZE + TILE_SIZE // 2)
-
-            dx = target_pos[0] - self.rect.centerx
-            dy = target_pos[1] - self.rect.centery
-            dist = (dx**2 + dy**2) ** 0.5
-
-            if dist < 3:
-                self.path_index += 1
-            else:
-                move_x = self.speed * dx / dist
-                move_y = self.speed * dy / dist
-                self.rect.x += int(move_x)
-                self.rect.y += int(move_y)
+        self.follow_path(walls)
 
     def draw(self, surface):
         if self.alive:
             pygame.draw.rect(surface, self.color, self.rect)
+
+
