@@ -1,5 +1,6 @@
 # main.py
-
+# Autor: Sharenny Reyes
+# Matrícula: [Tu matrícula]
 
 import pygame
 import sys
@@ -10,7 +11,7 @@ from scripts.enemy import Enemy
 # Inicializar Pygame
 pygame.init()
 
-# Tamaño de pantalla para mostrar más mapa horizontal
+# Tamaño de ventana
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 600
 FPS = 60
@@ -19,15 +20,18 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Metroid Lineal")
 clock = pygame.time.Clock()
 
-# Crear jugador al inicio del nivel
+# Crear jugador
 player = Player(1 * TILE_SIZE, 9 * TILE_SIZE)
 
-# Enemigo final al final del nivel
+# Enemigo final
 enemies = [
     Enemy(28 * TILE_SIZE, 2 * TILE_SIZE)
 ]
 
-# Obtener colisiones desde el mapa
+# Variable de victoria
+game_won = False
+
+# Obtener colisiones del mapa
 def get_collision_rects():
     rects = []
     for row_idx, row in enumerate(level_map):
@@ -38,7 +42,9 @@ def get_collision_rects():
                 rects.append(pygame.Rect(x, y, TILE_SIZE, TILE_SIZE))
     return rects
 
+# Bucle principal
 def main():
+    global game_won
     running = True
     while running:
         screen.fill((0, 0, 0))
@@ -48,11 +54,13 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-        # Lógica
+        # Obtener paredes
         walls = get_collision_rects()
+
+        # Actualizar jugador
         player.update(walls)
 
-        # Actualizar y manejar balas vs enemigos
+        # Balas y enemigos
         for bullet in player.bullets[:]:
             if not bullet.update(walls):
                 player.bullets.remove(bullet)
@@ -65,12 +73,28 @@ def main():
                         player.bullets.remove(bullet)
                     break
 
-        # Dibujar
+        # Verificar victoria
+        if not game_won:
+            final_enemy = enemies[0]
+            if not final_enemy.alive:
+                distance = abs(player.rect.centerx - final_enemy.rect.centerx)
+                vertical = abs(player.rect.centery - final_enemy.rect.centery)
+                if distance < 60 and vertical < 60:
+                    game_won = True
+
+        # Dibujar elementos
         draw_level(screen)
         player.draw(screen)
         for enemy in enemies:
             enemy.draw(screen)
 
+        # Mostrar texto de victoria
+        if game_won:
+            font = pygame.font.SysFont("arial", 60, bold=True)
+            text = font.render("¡Has ganado!", True, (255, 255, 0))
+            screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - text.get_height() // 2))
+
+        # Actualizar pantalla
         pygame.display.flip()
         clock.tick(FPS)
 
