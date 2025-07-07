@@ -1,6 +1,5 @@
 # scripts/enemy.py
-# Autor: Sharenny Reyes
-# Matrícula: [Tu matrícula]
+
 
 import pygame
 
