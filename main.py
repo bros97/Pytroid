@@ -1,6 +1,5 @@
 # main.py
-# Autor: Sharenny Reyes
-# Matrícula: [Tu matrícula]
+
 
 import pygame
 import sys
@@ -11,27 +10,26 @@ from scripts.enemy import Enemy
 # Inicializar Pygame
 pygame.init()
 
-# Tamaño de ventana
+# Constantes
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 600
 FPS = 60
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Metroid Lineal")
+pygame.display.set_caption("Pytroid")
 clock = pygame.time.Clock()
 
-# Crear jugador
-player = Player(1 * TILE_SIZE, 9 * TILE_SIZE)
+font_big = pygame.font.SysFont("arial", 60, bold=True)
+font_small = pygame.font.SysFont("arial", 30)
 
-# Enemigo final
-enemies = [
-    Enemy(28 * TILE_SIZE, 2 * TILE_SIZE)
-]
-
-# Variable de victoria
+# Variables globales
 game_won = False
+game_started = False
 
-# Obtener colisiones del mapa
+# Crear jugador y enemigos
+player = Player(1 * TILE_SIZE, 9 * TILE_SIZE)
+enemies = [Enemy(28 * TILE_SIZE, 2 * TILE_SIZE)]
+
 def get_collision_rects():
     rects = []
     for row_idx, row in enumerate(level_map):
@@ -42,30 +40,44 @@ def get_collision_rects():
                 rects.append(pygame.Rect(x, y, TILE_SIZE, TILE_SIZE))
     return rects
 
-# Bucle principal
+def show_menu():
+    screen.fill((0, 0, 0))
+    title = font_big.render("Pytroid", True, (255, 255, 255))
+    prompt = font_small.render("Presiona ENTER para jugar", True, (200, 200, 200))
+    screen.blit(title, (SCREEN_WIDTH // 2 - title.get_width() // 2, 150))
+    screen.blit(prompt, (SCREEN_WIDTH // 2 - prompt.get_width() // 2, 300))
+    pygame.display.flip()
+
+def show_victory():
+    victory = font_big.render("¡Has ganado!", True, (255, 255, 0))
+    screen.blit(victory, (SCREEN_WIDTH // 2 - victory.get_width() // 2, SCREEN_HEIGHT // 2 - victory.get_height() // 2))
+
 def main():
-    global game_won
+    global game_started, game_won
     running = True
+
     while running:
         screen.fill((0, 0, 0))
 
-        # Eventos
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        # Obtener paredes
-        walls = get_collision_rects()
+        keys = pygame.key.get_pressed()
 
-        # Actualizar jugador
+        if not game_started:
+            show_menu()
+            if keys[pygame.K_RETURN]:
+                game_started = True
+            continue
+
+        walls = get_collision_rects()
         player.update(walls)
 
-        # Balas y enemigos
         for bullet in player.bullets[:]:
             if not bullet.update(walls):
                 player.bullets.remove(bullet)
                 continue
-
             for enemy in enemies:
                 if enemy.alive and bullet.rect.colliderect(enemy.rect):
                     enemy.alive = False
@@ -88,13 +100,9 @@ def main():
         for enemy in enemies:
             enemy.draw(screen)
 
-        # Mostrar texto de victoria
         if game_won:
-            font = pygame.font.SysFont("arial", 60, bold=True)
-            text = font.render("¡Has ganado!", True, (255, 255, 0))
-            screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 2 - text.get_height() // 2))
+            show_victory()
 
-        # Actualizar pantalla
         pygame.display.flip()
         clock.tick(FPS)
 
