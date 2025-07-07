@@ -5,117 +5,114 @@ import pygame
 import sys
 from scripts.player import Player
 from scripts.enemy import Enemy
-from scripts.level import draw_level, get_collision_rects
+from scripts.enemy_boss import EnemyBoss
+from scripts.bullet import Bullet
+from scripts.level import draw_level, level_map, TILE_SIZE
+from scripts.pathfinding import a_star
 
 pygame.init()
 
-# Constantes
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
+SCREEN_WIDTH = 1200
+SCREEN_HEIGHT = 600
 FPS = 60
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
 
-# Inicialización
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Pytroid")
 clock = pygame.time.Clock()
-font = pygame.font.SysFont(None, 48)
 
-# Estado del juego
-START_SCREEN = True
-GAME_OVER = False
-VICTORY = False
+# Estados del juego
+STATE_INTRO = "intro"
+STATE_PLAYING = "playing"
+STATE_VICTORY = "victory"
 
-# Instancias
+# Inicializar entidades
 player = Player(60, 60)
 
 enemies = [
     Enemy(300, 100),
-    Enemy(500, 200),
-    Enemy(700, 100)
+    Enemy(600, 100),
+    Enemy(900, 100)
 ]
 
-final_boss = Enemy(700, 300, color=(255, 0, 0), is_boss=True)
+boss = EnemyBoss(1140, 100)
+
+font = pygame.font.SysFont(None, 48)
+
+def get_collision_rects():
+    rects = []
+    for row_idx, row in enumerate(level_map):
+        for col_idx, tile in enumerate(row):
+            if tile == 1:
+                x = col_idx * TILE_SIZE
+                y = row_idx * TILE_SIZE
+                rects.append(pygame.Rect(x, y, TILE_SIZE, TILE_SIZE))
+    return rects
 
 def reset():
-    global GAME_OVER, VICTORY, START_SCREEN
     player.reset()
-    for e in enemies + [final_boss]:
+    for e in enemies:
         e.reset()
-    GAME_OVER = False
-    VICTORY = False
-    START_SCREEN = True
+    boss.reset()
 
 def main():
-    global START_SCREEN, GAME_OVER, VICTORY
-    while True:
-        screen.fill(BLACK)
-        keys = pygame.key.get_pressed()
+    state = STATE_INTRO
+    running = True
+
+    while running:
+        screen.fill((0, 0, 0))
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+                running = False
 
-        if START_SCREEN:
-            text = font.render("Presione ENTER para iniciar", True, WHITE)
-            screen.blit(text, (180, 250))
+        keys = pygame.key.get_pressed()
+
+        if state == STATE_INTRO:
+            text = font.render("Presiona ENTER para comenzar", True, (255, 255, 255))
+            screen.blit(text, (SCREEN_WIDTH // 2 - 250, SCREEN_HEIGHT // 2))
             if keys[pygame.K_RETURN]:
-                START_SCREEN = False
-            pygame.display.flip()
-            clock.tick(FPS)
-            continue
-
-        if GAME_OVER:
-            text = font.render("Game Over - R para reiniciar", True, (255, 0, 0))
-            screen.blit(text, (180, 250))
-            if keys[pygame.K_r]:
+                state = STATE_PLAYING
                 reset()
-            pygame.display.flip()
-            clock.tick(FPS)
-            continue
 
-        if VICTORY:
-            text = font.render("Felicidades, has ganado! - R para reiniciar", True, (0, 255, 0))
-            screen.blit(text, (80, 250))
+        elif state == STATE_PLAYING:
+            walls = get_collision_rects()
+
+            player.update(walls)
+            for enemy in enemies:
+                enemy.update(player, walls)
+            boss.update(player, walls)
+
+            for bullet in player.bullets[:]:
+                if bullet.update(walls):
+                    for enemy in enemies + [boss]:
+                        if enemy.alive and bullet.rect.colliderect(enemy.rect):
+                            enemy.alive = False
+                            player.bullets.remove(bullet)
+                            if enemy == boss:
+                                state = STATE_VICTORY
+                            break
+                else:
+                    player.bullets.remove(bullet)
+
+            draw_level(screen)
+            player.draw(screen)
+            for enemy in enemies:
+                enemy.draw(screen)
+            boss.draw(screen)
+
+        elif state == STATE_VICTORY:
+            text = font.render("Felicidades, has vencido al jefe final!", True, (0, 255, 0))
+            screen.blit(text, (SCREEN_WIDTH // 2 - 300, SCREEN_HEIGHT // 2))
+            text2 = font.render("Presiona R para reiniciar", True, (255, 255, 255))
+            screen.blit(text2, (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2 + 50))
             if keys[pygame.K_r]:
-                reset()
-            pygame.display.flip()
-            clock.tick(FPS)
-            continue
-
-        walls = get_collision_rects()
-        player.update(walls)
-
-        for e in enemies:
-            e.update(player, walls)
-        final_boss.update(player, walls)
-
-        # Verificar colisiones con enemigos
-        for e in enemies:
-            if e.alive and player.rect.colliderect(e.rect):
-                GAME_OVER = True
-
-        if final_boss.alive and player.rect.colliderect(final_boss.rect):
-            GAME_OVER = True
-
-        for bullet in player.bullets:
-            for e in enemies:
-                if e.alive and bullet.rect.colliderect(e.rect):
-                    e.alive = False
-            if final_boss.alive and bullet.rect.colliderect(final_boss.rect):
-                final_boss.alive = False
-                VICTORY = True
-
-        draw_level(screen)
-        player.draw(screen)
-
-        for e in enemies:
-            e.draw(screen)
-        final_boss.draw(screen)
+                state = STATE_INTRO
 
         pygame.display.flip()
         clock.tick(FPS)
+
+    pygame.quit()
+    sys.exit()
 
 if __name__ == "__main__":
     main()
