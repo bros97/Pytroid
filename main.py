@@ -10,28 +10,22 @@ from scripts.enemy import Enemy
 # Inicializar Pygame
 pygame.init()
 
-# Constantes
+# Tamaño de pantalla para mostrar más mapa horizontal
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 600
 FPS = 60
 
-# Crear ventana
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Metroid Clone")
+pygame.display.set_caption("Metroid Lineal")
 clock = pygame.time.Clock()
 
-# Crear jugador
+# Crear jugador al inicio del nivel
 player = Player(1 * TILE_SIZE, 9 * TILE_SIZE)
 
-
-# Crear enemigos
+# Enemigo final al final del nivel
 enemies = [
-    Enemy(8 * TILE_SIZE, 3 * TILE_SIZE),   # (col=6, fila=3) = (240, 120)
-    Enemy(12 * TILE_SIZE, 3 * TILE_SIZE),
     Enemy(28 * TILE_SIZE, 2 * TILE_SIZE)
-
 ]
-
 
 # Obtener colisiones desde el mapa
 def get_collision_rects():
@@ -44,25 +38,22 @@ def get_collision_rects():
                 rects.append(pygame.Rect(x, y, TILE_SIZE, TILE_SIZE))
     return rects
 
-# Bucle principal
 def main():
     running = True
     while running:
-        screen.fill((0, 0, 0))  # fondo negro
+        screen.fill((0, 0, 0))
 
         # Eventos
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        # Obtener paredes
+        # Lógica
         walls = get_collision_rects()
-
-        # Actualizar jugador
         player.update(walls)
 
-        # Actualizar y manejar colisiones de balas
-        for bullet in player.bullets[:]:  # Copia segura
+        # Actualizar y manejar balas vs enemigos
+        for bullet in player.bullets[:]:
             if not bullet.update(walls):
                 player.bullets.remove(bullet)
                 continue
@@ -74,7 +65,7 @@ def main():
                         player.bullets.remove(bullet)
                     break
 
-        # Dibujar elementos del juego
+        # Dibujar
         draw_level(screen)
         player.draw(screen)
         for enemy in enemies:
