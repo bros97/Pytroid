@@ -12,8 +12,8 @@ from scripts.pathfinding import a_star
 
 pygame.init()
 
-SCREEN_WIDTH = 1366
-SCREEN_HEIGHT = 768
+SCREEN_WIDTH = 1520
+SCREEN_HEIGHT = 758
 FPS = 60
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -85,6 +85,12 @@ def main():
                 if enemy.alive and enemy.rect.colliderect(player.rect):
                     state = STATE_DEFEAT
             boss.update(player, walls)
+
+            # Revisar si las balas del jefe tocan al jugador
+            for bullet in boss.bullets:
+                if bullet.active and bullet.rect.colliderect(player.rect):
+                    state = STATE_DEFEAT
+                    break
             if boss.alive and boss.rect.colliderect(player.rect):
                 state = STATE_DEFEAT
 

@@ -2,6 +2,7 @@
 # Matrícula: 15-EISN-2-004
 
 import pygame
+import os
 from scripts.pathfinding import a_star
 from scripts.level import level_map, TILE_SIZE
 
@@ -14,6 +15,18 @@ class Enemy:
         self.jump_strength = -12
         self.speed = 2
         self.color = color
+
+        self.images_right = [
+            pygame.image.load(os.path.join("assets", "images", "zedr1.png")).convert_alpha(),
+            pygame.image.load(os.path.join("assets", "images", "zedr2.png")).convert_alpha()
+        ]
+        self.images_left = [
+            pygame.image.load(os.path.join("assets", "images", "zedl1.png")).convert_alpha(),
+            pygame.image.load(os.path.join("assets", "images", "zedl2.png")).convert_alpha()
+        ]
+        self.current_frame = 0
+        self.frame_counter = 0
+        self.facing_right = True
         self.path = []
         self.path_index = 0
         self.alive = True
@@ -74,6 +87,20 @@ class Enemy:
                     self.velocity_y = self.jump_strength
 
             # Avanzar al siguiente punto si está cerca
+
+        # Actualizar dirección y animación
+        if dx > 0:
+            self.facing_right = True
+        elif dx < 0:
+            self.facing_right = False
+
+        if abs(dx) > 0 or abs(dy) > 0:
+            self.frame_counter += 1
+            if self.frame_counter >= 10:
+                self.current_frame = (self.current_frame + 1) % 2
+                self.frame_counter = 0
+        else:
+            self.current_frame = 0
             if abs(dx) < 4 and abs(dy) < 4:
                 self.path_index += 1
 
@@ -89,4 +116,6 @@ class Enemy:
 
     def draw(self, surface):
         if self.alive:
-            pygame.draw.rect(surface, self.color, self.rect)
+            image = self.images_right[self.current_frame] if self.facing_right else self.images_left[self.current_frame]
+            surface.blit(image, self.rect.topleft)
+        
