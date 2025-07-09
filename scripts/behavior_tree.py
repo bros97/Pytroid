@@ -1,43 +1,41 @@
-# scripts/behavior_tree.py
-
-
-class NodeStatus:
-    SUCCESS = "SUCCESS"
-    FAILURE = "FAILURE"
-    RUNNING = "RUNNING"
+# Nombre: Maylon Javier Polanco
+# Matrícula: 15-EISN-2-004
 
 class Node:
-    def tick(self, agent):
+    def run(self, boss, player):
         raise NotImplementedError
 
-# Secuencia: todos deben tener éxito para continuar
-class Sequence(Node):
-    def __init__(self, children):
-        self.children = children
-
-    def tick(self, agent):
-        for child in self.children:
-            result = child.tick(agent)
-            if result != NodeStatus.SUCCESS:
-                return result
-        return NodeStatus.SUCCESS
-
-# Selector: ejecuta el primero que funcione
 class Selector(Node):
     def __init__(self, children):
         self.children = children
 
-    def tick(self, agent):
+    def run(self, boss, player):
         for child in self.children:
-            result = child.tick(agent)
-            if result == NodeStatus.SUCCESS:
-                return NodeStatus.SUCCESS
-        return NodeStatus.FAILURE
+            if child.run(boss, player):
+                return True
+        return False
 
-# Hoja (acción): recibe una función personalizada
+class Sequence(Node):
+    def __init__(self, children):
+        self.children = children
+
+    def run(self, boss, player):
+        for child in self.children:
+            if not child.run(boss, player):
+                return False
+        return True
+
+class Condition(Node):
+    def __init__(self, condition_func):
+        self.condition_func = condition_func
+
+    def run(self, boss, player):
+        return self.condition_func(boss, player)
+
 class Action(Node):
-    def __init__(self, function):
-        self.function = function
+    def __init__(self, action_func):
+        self.action_func = action_func
 
-    def tick(self, agent):
-        return self.function(agent)
+    def run(self, boss, player):
+        self.action_func(boss, player)
+        return True

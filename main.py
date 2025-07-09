@@ -12,8 +12,8 @@ from scripts.pathfinding import a_star
 
 pygame.init()
 
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1366
+SCREEN_HEIGHT = 768
 FPS = 60
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -24,17 +24,19 @@ clock = pygame.time.Clock()
 STATE_INTRO = "intro"
 STATE_PLAYING = "playing"
 STATE_VICTORY = "victory"
+STATE_DEFEAT = "defeat"
 
 # Inicializar entidades
 player = Player(60, 60)
 
 enemies = [
-    Enemy(300, 100),
-    Enemy(600, 100),
-    Enemy(900, 100)
+    Enemy(300, 200),
+    Enemy(500, 300),
+    Enemy(700, 400)
 ]
 
-boss = EnemyBoss(1140, 100)
+boss = EnemyBoss(10 * TILE_SIZE, 1 * TILE_SIZE)
+
 
 font = pygame.font.SysFont(None, 48)
 
@@ -80,7 +82,11 @@ def main():
             player.update(walls)
             for enemy in enemies:
                 enemy.update(player, walls)
+                if enemy.alive and enemy.rect.colliderect(player.rect):
+                    state = STATE_DEFEAT
             boss.update(player, walls)
+            if boss.alive and boss.rect.colliderect(player.rect):
+                state = STATE_DEFEAT
 
             for bullet in player.bullets[:]:
                 if bullet.update(walls):
@@ -103,6 +109,14 @@ def main():
         elif state == STATE_VICTORY:
             text = font.render("Felicidades, has vencido al jefe final!", True, (0, 255, 0))
             screen.blit(text, (SCREEN_WIDTH // 2 - 300, SCREEN_HEIGHT // 2))
+            text2 = font.render("Presiona R para reiniciar", True, (255, 255, 255))
+            screen.blit(text2, (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2 + 50))
+            if keys[pygame.K_r]:
+                state = STATE_INTRO
+
+        elif state == STATE_DEFEAT:
+            text = font.render("Has sido derrotado!", True, (255, 0, 0))
+            screen.blit(text, (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2))
             text2 = font.render("Presiona R para reiniciar", True, (255, 255, 255))
             screen.blit(text2, (SCREEN_WIDTH // 2 - 200, SCREEN_HEIGHT // 2 + 50))
             if keys[pygame.K_r]:
